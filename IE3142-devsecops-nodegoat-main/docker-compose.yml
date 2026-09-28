@@ -1,13 +1,27 @@
+services:
+  mongo:
+    image: mongo:4.4
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   web:
-
     build: .
-
+    command: ["npm", "start"]
+    depends_on:
+      mongo:
+        condition: service_healthy
     environment:
-
-      NODE_ENV:
-
+      NODE_ENV: development
       MONGODB_URI: mongodb://mongo:27017/nodegoat
+      COOKIE_SECRET: local-development-cookie-secret
+      CRYPTO_KEY: 0123456789abcdef0123456789abcdef
+    ports:
+      - "4000:4000"
 
-      COOKIE_SECRET: ${COOKIE_SECRET}
-
-      CRYPTO_KEY: ${CRYPTO_KEY}
+volumes:
+  mongo-data:
