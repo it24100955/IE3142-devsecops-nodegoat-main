@@ -1,0 +1,60 @@
+name: Security Pipeline
+
+on: [push]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+
+      # GATE 1 - SAST
+      - name: SAST (Semgrep)
+        run: |
+          pip install semgrep
+          semgrep --config auto . || true
+
+
+      # GATE 2 - Dependency scan
+      - name: Dependency scan (npm audit)
+        run: |
+          npm install
+          npm audit --audit-level=high || true
+
+
+      # GATE 3 - Secrets scan
+      - name: Install Gitleaks
+        run: |
+          wget https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz
+          tar -xzf gitleaks_8.28.0_linux_x64.tar.gz
+          sudo mv gitleaks /usr/local/bin/
+          gitleaks version
+
+
+      - name: Secrets scan (Gitleaks)
+        run: |
+          gitleaks detect --source . --verbose --redact
+
+
+      # GATE 4 - Container image scan
+      - name: Build the app image
+        run: |
+          docker build -t nodegoat:ci .
+
+
+      - name: Container scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'nodegoat:ci'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '0'

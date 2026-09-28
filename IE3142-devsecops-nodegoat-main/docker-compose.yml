@@ -1,0 +1,13 @@
+  web:
+
+    build: .
+
+    environment:
+
+      NODE_ENV:
+
+      MONGODB_URI: mongodb://mongo:27017/nodegoat
+
+      COOKIE_SECRET: ${COOKIE_SECRET}
+
+      CRYPTO_KEY: ${CRYPTO_KEY}
